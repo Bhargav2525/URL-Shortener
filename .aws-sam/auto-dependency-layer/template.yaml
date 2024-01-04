@@ -1,0 +1,119 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'URL-APP
+
+  Sample SAM Template for URL-APP
+
+  '
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  URLTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: URL
+        AttributeType: S
+      KeySchema:
+      - AttributeName: URL
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HelloWorldFunction
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Architectures:
+      - x86_64
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /url
+            Method: post
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: URLTable
+      Layers:
+      - Fn::GetAtt:
+        - AwsSamAutoDependencyLayerNestedStack
+        - Outputs.HelloWorldFunction19d43fc4DepLayer
+    Metadata:
+      SamResourceId: HelloWorldFunction
+  RedirectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: RedirectFunction
+      Handler: app.redirect_handler
+      Runtime: python3.11
+      Architectures:
+      - x86_64
+      Events:
+        Redirect:
+          Type: Api
+          Properties:
+            Path: /redirect
+            Method: get
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: URLTable
+          Environment:
+            Variables:
+              TABLE_ARN:
+                Fn::GetAtt:
+                - URLTable
+                - Arn
+      Layers:
+      - Fn::GetAtt:
+        - AwsSamAutoDependencyLayerNestedStack
+        - Outputs.RedirectFunctiona1a05fa0DepLayer
+    Metadata:
+      SamResourceId: RedirectFunction
+  AwsSamAutoDependencyLayerNestedStack:
+    DeletionPolicy: Delete
+    Metadata:
+      CreatedBy: AWS SAM CLI sync command
+    Properties:
+      TemplateURL: C:\Bhargav\djangoprojects\Basic\URL-APP\.aws-sam\auto-dependency-layer\adl_nested_template.yaml
+    Type: AWS::CloudFormation::Stack
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/url/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - HelloWorldFunction
+      - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      Fn::GetAtt:
+      - HelloWorldFunctionRole
+      - Arn
+  RedirectApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/redirect/
+  RedirectFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - RedirectFunction
+      - Arn
+  RedirectFunctionIamRole:
+    Description: Implicit IAM Role created for Redirect function
+    Value:
+      Fn::GetAtt:
+      - RedirectFunctionRole
+      - Arn
